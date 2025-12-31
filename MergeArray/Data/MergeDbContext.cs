@@ -16,6 +16,8 @@ public class MergeDbContext : DbContext
         op.Property(x => x.Array1Json).IsRequired();
         op.Property(x => x.Array2Json).IsRequired();
         op.Property(x => x.ResultJson).IsRequired();
+        op.Property(x => x.ResultLength).IsRequired();
         op.Property(x => x.CreatedAtUtc).IsRequired();
+        op.HasIndex(x => x.ResultLength);
     }
 }

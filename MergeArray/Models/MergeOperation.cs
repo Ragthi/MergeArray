@@ -10,4 +10,5 @@ public class MergeOperation
     public string Array1Json { get; set; } = "[]";
     public string Array2Json { get; set; } = "[]";
     public string ResultJson { get; set; } = "[]";
+    public int ResultLength { get; set; }
 }

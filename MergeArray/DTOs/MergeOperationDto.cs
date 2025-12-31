@@ -9,5 +9,7 @@
         public int[] Array2 { get; set; } = Array.Empty<int>();
 
         public int[] Result { get; set; } = Array.Empty<int>();
+
+        public int ResultLength { get; set; }
     }
 }

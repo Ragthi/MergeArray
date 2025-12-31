@@ -44,13 +44,14 @@ namespace MergeArray.Controllers
                 CreatedAtUtc = DateTime.UtcNow,
                 Array1Json = JsonSerializer.Serialize(request.Array1),
                 Array2Json = JsonSerializer.Serialize(request.Array2),
-                ResultJson = JsonSerializer.Serialize(merged)
+                ResultJson = JsonSerializer.Serialize(merged),
+                ResultLength = merged.Length
             };
 
             _db.MergeOperations.Add(op);
             await _db.SaveChangesAsync();
 
-            var dto = new MergeOperationDto { Id = op.Id, CreatedAtUtc = op.CreatedAtUtc, Array1 = request.Array1, Array2 = request.Array2, Result = merged };
+            var dto = new MergeOperationDto { Id = op.Id, CreatedAtUtc = op.CreatedAtUtc, Array1 = request.Array1, Array2 = request.Array2, Result = merged, ResultLength = merged.Length };
             return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
         }
 
@@ -71,10 +72,46 @@ namespace MergeArray.Controllers
                 CreatedAtUtc = op.CreatedAtUtc,
                 Array1 = JsonSerializer.Deserialize<int[]>(op.Array1Json) ?? Array.Empty<int>(),
                 Array2 = JsonSerializer.Deserialize<int[]>(op.Array2Json) ?? Array.Empty<int>(),
-                Result = JsonSerializer.Deserialize<int[]>(op.ResultJson) ?? Array.Empty<int>()
+                Result = JsonSerializer.Deserialize<int[]>(op.ResultJson) ?? Array.Empty<int>(),
+                ResultLength = op.ResultLength
             };
 
             return Ok(dto);
+        }
+
+        [HttpGet("by-result-length/{length:int}")]
+        [ProducesResponseType(typeof(object), 200)]
+        public async Task<IActionResult> GetByResultLength([FromRoute] int length, [FromQuery] int? skip, [FromQuery] int? take)
+        {
+            var s = Math.Max(skip ?? 0, 0);
+            var t = Math.Clamp(take ?? 50, 1, 200);
+
+            var ops = await _db.MergeOperations
+                .AsNoTracking()
+                .Where(x => x.ResultLength == length)
+                .OrderByDescending(x => x.CreatedAtUtc)
+                .Skip(s)
+                .Take(t)
+                .ToListAsync();
+
+            var items = ops.Select(op => new MergeOperationDto
+            {
+                Id = op.Id,
+                CreatedAtUtc = op.CreatedAtUtc,
+                Array1 = JsonSerializer.Deserialize<int[]>(op.Array1Json) ?? Array.Empty<int>(),
+                Array2 = JsonSerializer.Deserialize<int[]>(op.Array2Json) ?? Array.Empty<int>(),
+                Result = JsonSerializer.Deserialize<int[]>(op.ResultJson) ?? Array.Empty<int>(),
+                ResultLength = op.ResultLength
+            }).ToList();
+
+            return Ok(new
+            {
+                length,
+                skip = s,
+                take = t,
+                count = items.Count,
+                items
+            });
         }
     }
 }
