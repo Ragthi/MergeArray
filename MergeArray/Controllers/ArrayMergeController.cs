@@ -2,6 +2,7 @@ using MergeArray.DTOs;
 using MergeArraysApi.Data;
 using MergeArraysApi.Models;
 using MergeArraysApi.Services;
+using MergeArraysApi.Validation;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
@@ -28,6 +29,12 @@ namespace MergeArray.Controllers
         [ProducesResponseType(typeof(object), 400)]
         public async Task<IActionResult> Merge([FromBody] MergeRequestDto request)
         {
+            var errors = new List<string>();
+            errors.AddRange(SortedArrayValidator.ValidateSortedAscending(request.Array1, nameof(request.Array1)));
+            errors.AddRange(SortedArrayValidator.ValidateSortedAscending(request.Array2, nameof(request.Array2)));
+
+            if (errors.Count > 0)
+                return BadRequest(new { message = "Validation failed.", errors });
 
             var merged = _merger.MergeSorted(request.Array1, request.Array2);
 
